@@ -1,10 +1,11 @@
 """Factory functions for creating LangChain v1 LLM instances."""
+from functools import lru_cache
 
 from langchain_openai import ChatOpenAI
 
 from ..config import get_settings
 
-
+@lru_cache(maxsize=1)
 def create_chat_model(temperature: float = 0.0) -> ChatOpenAI:
     """Create a LangChain v1 ChatOpenAI instance.
 
