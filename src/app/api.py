@@ -66,7 +66,11 @@ async def qa_endpoint(payload: QuestionRequest) -> QAResponse:
     return QAResponse(
         answer=result.get("answer", ""),
         context=result.get("context", ""),
+        plan=result.get("plan"), # Defaults to None
+        sub_questions=result.get("sub_questions"), # Defaults to None
     )
+
+
 
 
 @app.post("/index-pdf", status_code=status.HTTP_200_OK)

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 class QuestionRequest(BaseModel):
@@ -21,3 +22,5 @@ class QAResponse(BaseModel):
 
     answer: str
     context: str
+    plan: Optional[str] = None
+    sub_questions: Optional[List[str]] = None
