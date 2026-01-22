@@ -44,15 +44,16 @@ Traditional **RAG** sends the **raw user question** directly to the database. Fo
 
 #### **2. Installation**
 
-```bash
 # Clone the repository
+
 git clone <github-repo-url>
 
 # Install dependencies
+
 uv sync
 
-
 #### **3. Running the Application**
+
 Start the Backend API:
 cd BackEnd-IKMS-MultiAgent-RAG
 uvicorn src.app.api:app --reload
@@ -61,19 +62,20 @@ Start the Frontend UI:
 cd FrontEnd-IKMS-MultiAgent-RAG
 streamlit run app.py
 
-
-
 ## 🔍 Acceptance Criteria Verification
+
 ✅ Visible Planning: The console logs clearly show the [AGENT: PLANNING] entry and exit points.
 ✅ Decomposition: Complex questions are broken into 2-3 focused sub-queries.
 ✅ Iterative Retrieval: The retrieval_node now aggregates results from multiple tool calls.
 ✅ UI Demonstration: The Streamlit interface displays the generated plan and sub-questions alongside the final answer.
 
 ## 📂 Repository Structure
+
 BackEnd-IKMS-MultiAgent-RAG/: Contains the LangGraph logic, FastAPI endpoints, and agent definitions.
 FrontEnd-IKMS-MultiAgent-RAG/: Streamlit frontend for interactive QA.
 
 ## 🔄 Summary of Major Changes
+
 These are the modifications that I have done:
 
 State Enhancement: Updated QAState in state.py to track plan and sub_questions.
@@ -82,4 +84,7 @@ Logic Refactor: Modified retrieval_node to loop through sub-questions, allowing 
 Graph Re-wiring: Updated graph.py to move the entry point from Retrieval to Planning (START -> planning -> retrieval).
 API & Model Update: Expanded QAResponse in models.py to expose the plan and sub-questions to the frontend.
 Professional Logging: Integrated detailed console logs to satisfy the "visible planning" requirement.
+
+```
+
 ```
