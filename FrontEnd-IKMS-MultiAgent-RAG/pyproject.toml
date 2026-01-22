@@ -1,5 +1,5 @@
 [project]
-name = "class-12"
+name = "FrontEnd-IKMS-MultiAgent-RAG"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -13,9 +13,11 @@ dependencies = [
     "langchain-text-splitters>=1.0.0",
     "langgraph>=1.0.4",
     "pinecone-client>=6.0.0",
-    "pydantic-settings>=2.0.0",
     "pypdf>=6.4.1",
-    "python-dotenv>=1.2.1",
     "python-multipart>=0.0.20",
     "uvicorn>=0.38.0",
+    "streamlit",
+    "requests",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.2.1",
 ]
