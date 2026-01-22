@@ -55,7 +55,8 @@ verification_agent = create_agent(
 
 
 def planning_node(state: QAState) -> QAState:
-    """Planning Agent node: decomposes the user question into a search strategy.
+    """Planning Agent node with professional entry and exit logging.
+    Planning Agent node: decomposes the user question into a search strategy.
 
     This node:
     - Sends the raw user question to the Planning Agent.
@@ -64,16 +65,26 @@ def planning_node(state: QAState) -> QAState:
     - Stores `plan` and `sub_questions` in the state for the Retrieval Agent to use.
     """
     question = state["question"]
+
+    
+    # NODE ENTRY LOG: Makes the planning step visible in console
+    print(f"\n[AGENT: PLANNING] ===== NODE START =====")
+    print(f"[AGENT: PLANNING] Received Question: {question}")
+
     result = planning_agent.invoke({"messages": [HumanMessage(content=question)]})
     content = _extract_last_ai_content(result.get("messages", []))
     
-    # Simple parsing logic for the LLM output based on the prompt format
     try:
         plan_part = content.split("Sub-questions:")[0].replace("Plan:", "").strip()
         sub_q_part = content.split("Sub-questions:")[-1].strip()
         sub_questions = [q.strip("- ").strip() for q in sub_q_part.split("\n") if q.strip()]
-    except Exception:
-        # Fallback if the LLM output format is unexpected
+        # NODE EXIT LOG: Displays the strategy and decomposition
+        print(f"[AGENT: PLANNING] Plan Strategy: {plan_part}")
+        print(f"[AGENT: PLANNING] Generated Sub-questions: {sub_questions}")
+        print(f"[AGENT: PLANNING] ===== NODE COMPLETE =====\n")
+
+    except Exception as e:
+        print(f"[AGENT: PLANNING] !! Parsing Error: {e}. Falling back to default.")
         plan_part = "Direct retrieval strategy"
         sub_questions = [question]
 
@@ -92,19 +103,25 @@ def retrieval_node(state: QAState) -> QAState:
     - Aggregates all retrieved context into a single, organized string.
     - Stores the consolidated context in `state["context"]`.
     """
+    print(f"\n[AGENT: RETRIEVAL] ===== NODE START =====")
+
     # Use sub_questions from the plan, or fall back to the original question
     queries = state.get("sub_questions") or [state["question"]]
     all_contexts = []
 
-    for query in queries:
+    for idx, query in enumerate(queries, start=1):
+        print(f"[AGENT: RETRIEVAL] Running query {idx}/{len(queries)}: {query}")
+
         result = retrieval_agent.invoke({"messages": [HumanMessage(content=query)]})
         messages = result.get("messages", [])
         
-        # Extract the ToolMessage content for each sub-query
         for msg in reversed(messages):
             if isinstance(msg, ToolMessage):
                 all_contexts.append(f"--- Context for: {query} ---\n{msg.content}")
                 break
+    
+    print(f"[AGENT: RETRIEVAL] Successfully aggregated {len(all_contexts)} context blocks.")
+    print(f"[AGENT: RETRIEVAL] ===== NODE COMPLETE =====\n")
 
     return {
         "context": "\n\n".join(all_contexts),
