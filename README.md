@@ -44,23 +44,33 @@ Traditional **RAG** sends the **raw user question** directly to the database. Fo
 
 #### **2. Installation**
 
-# Clone the repository
+**Clone the repository**
 
+```
 git clone <github-repo-url>
+```
 
-# Install dependencies
+**Install dependencies**
 
+```
 uv sync
+```
 
 #### **3. Running the Application**
 
 Start the Backend API:
+
+```
 cd BackEnd-IKMS-MultiAgent-RAG
 uvicorn src.app.api:app --reload
+```
 
 Start the Frontend UI:
+
+```
 cd FrontEnd-IKMS-MultiAgent-RAG
 streamlit run app.py
+```
 
 ## 🔍 Acceptance Criteria Verification
 
