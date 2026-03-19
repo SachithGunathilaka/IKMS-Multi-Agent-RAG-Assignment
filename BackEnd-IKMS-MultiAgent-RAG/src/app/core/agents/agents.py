@@ -181,5 +181,6 @@ Please verify and correct the draft answer, removing any unsupported claims."""
     answer = _extract_last_ai_content(messages)
 
     return {
-        "answer": answer,
-    }
+            "answer": answer,
+            "messages": [AIMessage(content=answer)] 
+        }

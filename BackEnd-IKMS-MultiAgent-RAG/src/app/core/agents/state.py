@@ -1,6 +1,8 @@
 """LangGraph state schema for the multi-agent QA flow."""
 
-from typing import TypedDict, List
+from typing import TypedDict, List, Annotated
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 
 class QAState(TypedDict):
@@ -14,8 +16,9 @@ class QAState(TypedDict):
     """
 
     question: str
-    plan: str | None     # Natural language search strategy
-    sub_questions: list[str] | None    # Decomposed questions
+    plan: str | None 
+    sub_questions: list[str] | None
     context: str | None
     draft_answer: str | None
     answer: str | None
+    messages: Annotated[List[BaseMessage], add_messages]

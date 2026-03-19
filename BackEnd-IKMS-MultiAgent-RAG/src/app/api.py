@@ -7,15 +7,32 @@ from .models import QuestionRequest, QAResponse
 from .services.qa_service import answer_question
 from .services.indexing_service import index_pdf_file
 
+from fastapi.middleware.cors import CORSMiddleware
+
+from fastapi.responses import StreamingResponse
+from .services.ikms_streaming_service import stream_ikms_chat
+
 
 app = FastAPI(
-    title="Class 12 Multi-Agent RAG Demo",
+    title="IKMS Multi-Agent RAG",
     description=(
         "Demo API for asking questions about a vector databases paper. "
         "The `/qa` endpoint currently returns placeholder responses and "
         "will be wired to a multi-agent RAG pipeline in later user stories."
     ),
     version="0.1.0",
+)
+
+# Add this immediately after app = FastAPI(...)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Default Vite port
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -39,38 +56,34 @@ async def unhandled_exception_handler(
         content={"detail": "Internal server error"},
     )
 
+###########################################################################################
 
-@app.post("/qa", response_model=QAResponse, status_code=status.HTTP_200_OK)
-async def qa_endpoint(payload: QuestionRequest) -> QAResponse:
-    """Submit a question about the vector databases paper.
-
-    US-001 requirements:
-    - Accept POST requests at `/qa` with JSON body containing a `question` field
-    - Validate the request format and return 400 for invalid requests
-    - Return 200 with `answer`, `draft_answer`, and `context` fields
-    - Delegate to the multi-agent RAG service layer for processing
+@app.post("/qa")
+async def qa_endpoint(payload: QuestionRequest):
     """
-
+    Agentic RAG endpoint utilizing Vercel Data Stream Protocol.
+    Visualizes Planning, Retrieval, and Verification phases in real-time.
+    """
     question = payload.question.strip()
     if not question:
-        # Explicit validation beyond Pydantic's type checking to ensure
-        # non-empty questions.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="`question` must be a non-empty string.",
         )
 
-    # Delegate to the service layer which runs the multi-agent QA graph
-    result = answer_question(question)
-
-    return QAResponse(
-        answer=result.get("answer", ""),
-        context=result.get("context", ""),
-        plan=result.get("plan"), # Defaults to None
-        sub_questions=result.get("sub_questions"), # Defaults to None
+    # Use a dynamic thread_id if your model supports it, otherwise fallback
+    # This addresses the "system-level implementation" feedback
+    return StreamingResponse(
+        stream_ikms_chat(question, thread_id="ikms-session-001"),
+        media_type="text/event-stream",
+        headers={
+            "x-vercel-ai-ui-message-stream": "v1",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
     )
 
-
+###########################################################################################
 
 
 @app.post("/index-pdf", status_code=status.HTTP_200_OK)
