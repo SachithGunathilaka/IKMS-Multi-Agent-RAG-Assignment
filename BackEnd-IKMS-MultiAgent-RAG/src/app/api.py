@@ -23,6 +23,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
+@app.get("/")
+def root():
+    return {"message": "IKMS Backend Running"}
+
 # Add this immediately after app = FastAPI(...)
 app.add_middleware(
     CORSMiddleware,
