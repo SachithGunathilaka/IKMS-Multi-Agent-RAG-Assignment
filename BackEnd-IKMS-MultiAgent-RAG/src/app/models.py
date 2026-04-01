@@ -1,5 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
+
+
+class QueryPlan(BaseModel):
+    """Schema for the structured response from the Planning Agent."""
+    plan: str = Field(description="The natural language search strategy for the overall question.")
+    sub_questions: List[str] = Field(description="A list of 2-3 focused sub-questions to be used for retrieval.")
 
 
 class QuestionRequest(BaseModel):

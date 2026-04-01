@@ -7,9 +7,10 @@ Verification) and thin node functions that LangGraph uses to invoke them.
 from typing import List
 
 from langchain.agents import create_agent
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage, SystemMessage
 
 from ..llm.factory import create_chat_model
+from ...models import QueryPlan
 from .prompts import (
     PLANNING_SYSTEM_PROMPT,
     RETRIEVAL_SYSTEM_PROMPT,
@@ -19,6 +20,10 @@ from .prompts import (
 from .state import QAState
 from .tools import retrieval_tool
 
+base_llm = create_chat_model()
+
+# Structured LLM specifically for the Planning node
+structured_planning_llm = base_llm.with_structured_output(QueryPlan)
 
 def _extract_last_ai_content(messages: List[object]) -> str:
     """Extract the content of the last AIMessage in a messages list."""
@@ -30,61 +35,56 @@ def _extract_last_ai_content(messages: List[object]) -> str:
 
 # Define agents at module level for reuse
 planning_agent = create_agent(
-    model=create_chat_model(),
+    model=base_llm,
     tools=[],
     system_prompt=PLANNING_SYSTEM_PROMPT,
 )
 
 retrieval_agent = create_agent(
-    model=create_chat_model(),
+    model=base_llm,
     tools=[retrieval_tool],
     system_prompt=RETRIEVAL_SYSTEM_PROMPT,
 )
 
 summarization_agent = create_agent(
-    model=create_chat_model(),
+    model=base_llm,
     tools=[],
     system_prompt=SUMMARIZATION_SYSTEM_PROMPT,
 )
 
 verification_agent = create_agent(
-    model=create_chat_model(),
+    model=base_llm,
     tools=[],
     system_prompt=VERIFICATION_SYSTEM_PROMPT,
 )
 
 
-def planning_node(state: QAState) -> QAState:
-    """Planning Agent node with professional entry and exit logging.
-    Planning Agent node: decomposes the user question into a search strategy.
-
-    This node:
-    - Sends the raw user question to the Planning Agent.
-    - The agent breaks the question into a natural language 'plan' and specific 'sub-questions'.
-    - Parses the agent's response to extract these components.
-    - Stores `plan` and `sub_questions` in the state for the Retrieval Agent to use.
-    """
+def planning_node(state: QAState) -> dict:
+    """Planning Agent node using Pydantic structured output."""
     question = state["question"]
 
-    
-    # NODE ENTRY LOG: Makes the planning step visible in console
+    # NODE ENTRY LOG
     print(f"\n[AGENT: PLANNING] ===== NODE START =====")
     print(f"[AGENT: PLANNING] Received Question: {question}")
 
-    result = planning_agent.invoke({"messages": [HumanMessage(content=question)]})
-    content = _extract_last_ai_content(result.get("messages", []))
-    
     try:
-        plan_part = content.split("Sub-questions:")[0].replace("Plan:", "").strip()
-        sub_q_part = content.split("Sub-questions:")[-1].strip()
-        sub_questions = [q.strip("- ").strip() for q in sub_q_part.split("\n") if q.strip()]
-        # NODE EXIT LOG: Displays the strategy and decomposition
+        # SystemMessage correctly after importing it
+        structured_response = structured_planning_llm.invoke([
+            SystemMessage(content=PLANNING_SYSTEM_PROMPT),
+            HumanMessage(content=question)
+        ])
+
+        plan_part = structured_response.plan
+        sub_questions = structured_response.sub_questions
+
+        # NODE EXIT LOG
         print(f"[AGENT: PLANNING] Plan Strategy: {plan_part}")
         print(f"[AGENT: PLANNING] Generated Sub-questions: {sub_questions}")
         print(f"[AGENT: PLANNING] ===== NODE COMPLETE =====\n")
 
     except Exception as e:
-        print(f"[AGENT: PLANNING] !! Parsing Error: {e}. Falling back to default.")
+        # Pydantic catches if the LLM output doesn't match QueryPlan
+        print(f"[AGENT: PLANNING] !! Structured Output Error: {e}. Falling back to default.")
         plan_part = "Direct retrieval strategy"
         sub_questions = [question]
 
@@ -92,7 +92,6 @@ def planning_node(state: QAState) -> QAState:
         "plan": plan_part,
         "sub_questions": sub_questions
     }
-
 
 def retrieval_node(state: QAState) -> QAState:
     """Retrieval Agent node: gathers context using the decomposed search plan.
